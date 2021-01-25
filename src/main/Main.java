@@ -1,5 +1,7 @@
 package main;
 
+import utils.MathUtils;
+
 import javax.imageio.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -26,8 +28,9 @@ public class Main {
 
         /* PROCESS IMAGE */
         long startTime = System.currentTimeMillis();
+        bufferedImage = addNoise(bufferedImage, 10);
+        bufferedImage = quantize(bufferedImage, 18);
         bufferedImage = pixelate(bufferedImage, 6);
-        bufferedImage = quantize(bufferedImage);
         System.out.println("Time spent processing: " + (System.currentTimeMillis() - startTime) + " ms");
 
         /* STORE PROCESSED IMAGE */
@@ -61,12 +64,14 @@ public class Main {
         return outputImage;
     }
 
-    public static BufferedImage quantize(BufferedImage inputImage) {
+    public static BufferedImage quantize(BufferedImage inputImage, int quatizationFactor) {
         BufferedImage outputImage = new BufferedImage(inputImage.getWidth(), inputImage.getHeight(), inputImage.getType());
         for (int i = 0; i < inputImage.getWidth(); i++) {
             for (int j = 0; j < inputImage.getHeight(); j++) {
                 Color pixelColor = new Color(inputImage.getRGB(i, j));
-                int r = quantizeInteger(pixelColor.getRed()), g = quantizeInteger(pixelColor.getGreen()), b = quantizeInteger(pixelColor.getBlue());
+                int r = quantizeInteger(pixelColor.getRed(), quatizationFactor);
+                int g = quantizeInteger(pixelColor.getGreen(), quatizationFactor);
+                int b = quantizeInteger(pixelColor.getBlue(), quatizationFactor);
                 int alpha = (inputImage.getRGB(i, j) >> 24);
                 int newColor = (alpha << 24) | (r << 16) | (g << 8) | b;
                 outputImage.setRGB(i, j, newColor);
@@ -76,10 +81,26 @@ public class Main {
     }
 
     public static int quantizeInteger(int input) {
-        return quantizeInteger(input, 72);
+        return quantizeInteger(input, 36);
     }
 
     public static int quantizeInteger(int input, int quatizationFactor) {
         return (int) (Math.floor((double) input / (double) quatizationFactor) * (255.0 / Math.floor(255.0 / quatizationFactor)));
+    }
+
+    private static BufferedImage addNoise(BufferedImage inputImage, int noiseFactor) {
+        BufferedImage outputImage = new BufferedImage(inputImage.getWidth(), inputImage.getHeight(), inputImage.getType());
+        for (int i = 0; i < inputImage.getWidth(); i++) {
+            for (int j = 0; j < inputImage.getHeight(); j++) {
+                Color pixelColor = new Color(inputImage.getRGB(i, j));
+                int r = MathUtils.clamp(pixelColor.getRed() + (int) (MathUtils.random(-noiseFactor, noiseFactor)), 0, 255);
+                int g = MathUtils.clamp(pixelColor.getGreen() + (int) (MathUtils.random(-noiseFactor, noiseFactor)), 0, 255);
+                int b = MathUtils.clamp(pixelColor.getBlue() + (int) (MathUtils.random(-noiseFactor, noiseFactor)), 0, 255);
+                int alpha = (inputImage.getRGB(i, j) >> 24);
+                int newColor = (alpha << 24) | (r << 16) | (g << 8) | b;
+                outputImage.setRGB(i, j, newColor);
+            }
+        }
+        return outputImage;
     }
 }
